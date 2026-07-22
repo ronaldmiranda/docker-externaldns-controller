@@ -109,7 +109,7 @@ func (p *Provider) addTargets(ctx context.Context, ep *endpoint.Endpoint, target
 	for _, t := range targets {
 		p.log.Info("adding pihole host", "name", ep.DNSName, "target", t)
 		if err := p.client.addHost(ctx, hostEntry(t, ep.DNSName)); err != nil {
-			return err
+			return fmt.Errorf("adding %s %s -> %s: %w", ep.RecordType, ep.DNSName, t, err)
 		}
 	}
 	return nil
@@ -122,7 +122,7 @@ func (p *Provider) deleteTargets(ctx context.Context, ep *endpoint.Endpoint, tar
 	for _, t := range targets {
 		p.log.Info("removing pihole host", "name", ep.DNSName, "target", t)
 		if err := p.client.deleteHost(ctx, hostEntry(t, ep.DNSName)); err != nil {
-			return err
+			return fmt.Errorf("removing %s %s -> %s: %w", ep.RecordType, ep.DNSName, t, err)
 		}
 	}
 	return nil

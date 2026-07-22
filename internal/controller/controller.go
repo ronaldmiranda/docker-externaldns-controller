@@ -42,8 +42,12 @@ func New(src source.Source, reg Registry, opts Options, log *slog.Logger) *Contr
 }
 
 // Run blocks, reconciling on source events and on a periodic resync ticker,
-// until ctx is cancelled. The first reconcile runs synchronously so
-// misconfiguration (bad credentials, unreachable daemon) fails fast.
+// until ctx is cancelled. The first reconcile runs synchronously so that a
+// misconfiguration which stops the controller from even reading state (an
+// unreachable Docker daemon, invalid credentials) fails fast. Failures while
+// applying changes to the provider are never fatal — they are logged and
+// retried on the next reconcile — so a flaky provider or a single bad record
+// never restarts the controller.
 func (c *Controller) Run(ctx context.Context) error {
 	events := c.source.Watch(ctx, c.opts.DebounceInterval)
 	ticker := time.NewTicker(c.opts.ResyncInterval)
@@ -113,7 +117,11 @@ func (c *Controller) reconcile(ctx context.Context) error {
 	}
 
 	if err := c.registry.ApplyChanges(ctx, p.Changes); err != nil {
-		return err
+		// A provider change failing must never take the controller down: log it
+		// and let the next reconcile (event or resync) retry. Returning nil
+		// keeps even the first, synchronous reconcile from exiting the process.
+		c.log.Error("applying changes to provider failed, will retry on next reconcile", "error", err)
+		return nil
 	}
 	c.log.Info("reconcile applied",
 		"created", len(p.Changes.Create),

@@ -1,9 +1,34 @@
 package docker
 
 import (
+	"log/slog"
 	"reflect"
 	"testing"
 )
+
+func TestExcludeLabelSkipsContainer(t *testing.T) {
+	s := &Source{labelPrefix: "externaldns", defaultTarget: "203.0.113.10", traefik: true, log: slog.Default()}
+
+	// A Traefik-labelled container the user wants ignored, without disabling
+	// Traefik routing itself.
+	eps := s.containerEndpoints("app", map[string]string{
+		"traefik.enable":                "true",
+		"traefik.http.routers.app.rule": "Host(`app.example.com`)",
+		"externaldns.exclude":           "true",
+	})
+	if len(eps) != 0 {
+		t.Errorf("excluded container must yield no endpoints, got %v", eps)
+	}
+
+	// Same container without the exclude label is managed.
+	eps = s.containerEndpoints("app", map[string]string{
+		"traefik.enable":                "true",
+		"traefik.http.routers.app.rule": "Host(`app.example.com`)",
+	})
+	if len(eps) != 1 || eps[0].DNSName != "app.example.com" {
+		t.Errorf("expected app.example.com to be managed, got %v", eps)
+	}
+}
 
 func TestTraefikHostRuleWithDefaultTarget(t *testing.T) {
 	eps, err := parseTraefikLabels("externaldns", "203.0.113.10", map[string]string{

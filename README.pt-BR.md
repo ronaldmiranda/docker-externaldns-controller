@@ -62,6 +62,7 @@ entra sem mexer nas outras.
 | `externaldns.target` | sim* | Conteúdo do registro. Separe por vírgula para múltiplos alvos (ex. dois registros A). `*`opcional para `A`/`AAAA` quando `--default-target` estiver definido |
 | `externaldns.ttl` | não | TTL em segundos; omita para o padrão do provedor |
 | `externaldns.proxied` | não | Só Cloudflare: `true`/`false` para passar pelo proxy |
+| `externaldns.exclude` | não | `true` faz o container inteiro ser ignorado (nativo e Traefik) |
 
 ### Vários registros em um container
 
@@ -93,6 +94,9 @@ labels:
   `Host(`a`, `b`)` e `Host(`a`) || Host(`b`)` geram vários registros.
   `HostRegexp(...)` é ignorado — uma regex não tem nome concreto.
 - `traefik.enable: "false"` exclui o container, igual ao próprio Traefik.
+- Para pular o DNS de um serviço **mantendo o roteamento do Traefik**, adicione
+  `externaldns.exclude: "true"` — o controller ignora o container (e remove
+  qualquer registro que antes possuía para ele).
 - As labels do Traefik dizem *qual* é o hostname, não *para onde* ele aponta.
   Por isso o registro é um `A` apontando para `--default-target` (tipicamente o
   IP do host onde o Traefik escuta). Defina globalmente:

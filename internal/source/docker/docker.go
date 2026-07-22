@@ -77,6 +77,11 @@ func (s *Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 // explicit declaration wins over a Traefik-derived one. A parser error is
 // logged and its output dropped without discarding the other parser's records.
 func (s *Source) containerEndpoints(name string, labels map[string]string) []*endpoint.Endpoint {
+	if isExcluded(s.labelPrefix, labels) {
+		s.log.Debug("skipping excluded container", "container", name)
+		return nil
+	}
+
 	var out []*endpoint.Endpoint
 
 	native, err := parseLabels(s.labelPrefix, s.defaultTarget, labels)

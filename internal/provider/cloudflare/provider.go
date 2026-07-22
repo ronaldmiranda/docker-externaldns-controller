@@ -118,7 +118,7 @@ func (p *Provider) reconcileRecord(ctx context.Context, ep *endpoint.Endpoint) e
 
 	live, err := p.recordsFor(ctx, zone.ID, ep)
 	if err != nil {
-		return err
+		return fmt.Errorf("listing %s: %w", describe(ep, ""), err)
 	}
 
 	proxied := ep.ProviderSpecific["proxied"] == "true"
@@ -136,7 +136,7 @@ func (p *Provider) reconcileRecord(ctx context.Context, ep *endpoint.Endpoint) e
 		if !desired[content] {
 			p.log.Info("deleting DNS record", "name", ep.DNSName, "type", ep.RecordType, "content", rec.Content)
 			if err := p.client.deleteDNSRecord(ctx, zone.ID, rec.ID); err != nil {
-				return err
+				return fmt.Errorf("deleting %s: %w", describe(ep, rec.Content), err)
 			}
 			continue
 		}
@@ -146,7 +146,7 @@ func (p *Provider) reconcileRecord(ctx context.Context, ep *endpoint.Endpoint) e
 			rec.TTL = ttl
 			p.log.Info("updating DNS record", "name", ep.DNSName, "type", ep.RecordType, "content", rec.Content)
 			if err := p.client.updateDNSRecord(ctx, zone.ID, rec); err != nil {
-				return err
+				return fmt.Errorf("updating %s: %w", describe(ep, rec.Content), err)
 			}
 		}
 	}
@@ -166,7 +166,7 @@ func (p *Provider) reconcileRecord(ctx context.Context, ep *endpoint.Endpoint) e
 			TTL:     ttl,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("creating %s: %w", describe(ep, content), err)
 		}
 	}
 	return nil
@@ -180,15 +180,24 @@ func (p *Provider) deleteRecord(ctx context.Context, ep *endpoint.Endpoint) erro
 	}
 	live, err := p.recordsFor(ctx, zone.ID, ep)
 	if err != nil {
-		return err
+		return fmt.Errorf("listing %s: %w", describe(ep, ""), err)
 	}
 	for _, rec := range live {
 		p.log.Info("deleting DNS record", "name", ep.DNSName, "type", ep.RecordType, "content", rec.Content)
 		if err := p.client.deleteDNSRecord(ctx, zone.ID, rec.ID); err != nil {
-			return err
+			return fmt.Errorf("deleting %s: %w", describe(ep, rec.Content), err)
 		}
 	}
 	return nil
+}
+
+// describe renders a record as "<TYPE> <name> -> <content>" (the content is
+// omitted when empty) so an error names exactly which record failed.
+func describe(ep *endpoint.Endpoint, content string) string {
+	if content == "" {
+		return fmt.Sprintf("%s %s", ep.RecordType, ep.DNSName)
+	}
+	return fmt.Sprintf("%s %s -> %s", ep.RecordType, ep.DNSName, content)
 }
 
 // recordsFor lists the live records matching ep's name and type.

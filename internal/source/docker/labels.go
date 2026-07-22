@@ -157,6 +157,14 @@ func isAddressType(t string) bool {
 	return t == endpoint.RecordTypeA || t == endpoint.RecordTypeAAAA
 }
 
+// isExcluded reports whether a container opts out of DNS management entirely via
+// the <prefix>.exclude=true label. This lets a service keep its Traefik (or
+// native) labels while telling the controller to ignore it — no DNS record is
+// created for the container and any it already owns are removed.
+func isExcluded(prefix string, labels map[string]string) bool {
+	return strings.EqualFold(strings.TrimSpace(labels[prefix+".exclude"]), "true")
+}
+
 // splitTargets splits a comma-separated target list, trimming blanks.
 func splitTargets(s string) []string {
 	var out []string

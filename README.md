@@ -63,6 +63,7 @@ in without touching the others.
 | `externaldns.target` | yes* | Record content. Comma-separate for multiple targets (e.g. two A records). `*`optional for `A`/`AAAA` when `--default-target` is set |
 | `externaldns.ttl` | no | TTL in seconds; omit for the provider default |
 | `externaldns.proxied` | no | Cloudflare only: `true`/`false` to route through its proxy |
+| `externaldns.exclude` | no | `true` opts the whole container out of DNS management (native and Traefik) |
 
 ### Multiple records on one container
 
@@ -94,6 +95,9 @@ labels:
   `Host(`a`, `b`)` and `Host(`a`) || Host(`b`)` yield multiple records.
   `HostRegexp(...)` is ignored — a regex has no concrete name.
 - `traefik.enable: "false"` opts a container out, mirroring Traefik itself.
+- To skip DNS for a service **while keeping Traefik routing**, add
+  `externaldns.exclude: "true"` — the controller ignores the container (and
+  removes any record it previously owned for it).
 - Traefik labels say *what* the hostname is, not *where* it points. The record
   is therefore an `A` record to `--default-target` (typically the host IP where
   Traefik listens). Set it globally:
