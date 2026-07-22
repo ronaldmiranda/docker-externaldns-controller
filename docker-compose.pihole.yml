@@ -11,6 +11,7 @@ services:
     build: .
     environment:
       PROVIDER: pihole
+      OWNER_ID: default # this will be on TXT record to keep track of managed entries
       PIHOLE_URL: http://pi.hole
       PIHOLE_PASSWORD: ${PIHOLE_PASSWORD}
       DOMAIN_FILTER: home.example.com # scope: only names under this domain

@@ -13,6 +13,7 @@ services:
     build: .
     environment:
       PROVIDER: cloudflare
+      OWNER_ID: default # this will be on TXT record to keep track of managed entries
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
       # OWNER_ID: my-host             # default: container/host hostname
       # LABEL_PREFIX: externaldns     # default
