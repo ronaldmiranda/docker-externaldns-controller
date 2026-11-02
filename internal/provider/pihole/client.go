@@ -79,7 +79,7 @@ func (c *client) authenticate(ctx context.Context) error {
 		return fmt.Errorf("pihole auth request: %w", err)
 	}
 	defer resp.Body.Close()
-	data, _ := io.ReadAll(resp.Body)
+	data, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("pihole auth: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(data)))
@@ -157,7 +157,7 @@ func (c *client) send(ctx context.Context, method, path string) (*http.Response,
 		return nil, nil, fmt.Errorf("pihole %s %s: %w", method, path, err)
 	}
 	defer resp.Body.Close()
-	data, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -193,3 +193,6 @@ func (c *client) addHost(ctx context.Context, value string) error {
 func (c *client) deleteHost(ctx context.Context, value string) error {
 	return c.do(ctx, http.MethodDelete, "/api/config/dns/hosts/"+url.PathEscape(value), nil)
 }
+
+// maxResponseBytes caps how much of an API response is read into memory.
+const maxResponseBytes = 32 << 20

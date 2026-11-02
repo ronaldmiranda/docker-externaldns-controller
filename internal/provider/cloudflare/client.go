@@ -73,7 +73,7 @@ func (c *client) do(ctx context.Context, method, path string, body, out any) err
 	}
 	defer resp.Body.Close()
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
 	if err != nil {
 		return err
 	}
@@ -198,3 +198,6 @@ func (c *client) deleteDNSRecord(ctx context.Context, zoneID, recordID string) e
 	path := fmt.Sprintf("/zones/%s/dns_records/%s", zoneID, recordID)
 	return c.do(ctx, http.MethodDelete, path, nil, nil)
 }
+
+// maxResponseBytes caps how much of an API response is read into memory.
+const maxResponseBytes = 32 << 20
