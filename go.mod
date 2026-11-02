@@ -1,6 +1,6 @@
 module github.com/ronaldmiranda/externaldns-controller
 
-go 1.24
+go 1.26.10
 
 require (
 	github.com/moby/moby/api v1.55.0
