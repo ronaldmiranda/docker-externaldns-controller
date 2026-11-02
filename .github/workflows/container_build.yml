@@ -118,6 +118,7 @@ jobs:
           # final stage is copy-only (distroless), so no QEMU is needed.
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: VERSION=${{ steps.meta.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

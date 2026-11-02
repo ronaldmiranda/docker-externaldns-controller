@@ -24,6 +24,9 @@ import (
 	dockersource "github.com/ronaldmiranda/externaldns-controller/internal/source/docker"
 )
 
+// version is set at build time via -ldflags "-X main.version=...".
+var version = "dev"
+
 func main() {
 	cmd, err := newRootCommand()
 	if err != nil {
@@ -108,6 +111,7 @@ func newRootCommand() (*cobra.Command, error) {
 func run(ctx context.Context, cfg *config.Config) error {
 	log := newLogger(cfg.LogLevel)
 	slog.SetDefault(log)
+	log.Info("starting externaldns-controller", "version", version)
 
 	if err := cfg.Validate(); err != nil {
 		return err

@@ -1,0 +1,69 @@
+name: Release
+
+# Cutting a release = pushing a semver tag (see "Releasing" in CLAUDE.md).
+# container_build.yml reacts to the same tag and publishes the Docker image;
+# this workflow publishes the GitHub Release with binaries and checksums.
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test -race ./...
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build binaries
+        run: |
+          mkdir dist
+          for arch in amd64 arm64; do
+            name="externaldns-controller_${GITHUB_REF_NAME}_linux_${arch}"
+            CGO_ENABLED=0 GOOS=linux GOARCH=$arch \
+              go build -trimpath -ldflags="-s -w -X main.version=${GITHUB_REF_NAME}" \
+              -o "dist/externaldns-controller" ./cmd/externaldns-controller
+            tar -C dist -czf "dist/${name}.tar.gz" externaldns-controller
+            rm dist/externaldns-controller
+          done
+          (cd dist && sha256sum *.tar.gz > checksums.txt)
+
+      - name: Release notes
+        run: |
+          # Use the matching CHANGELOG.md section when there is one,
+          # otherwise fall back to GitHub's generated notes.
+          v="${GITHUB_REF_NAME#v}"
+          awk -v v="$v" '
+            $0 ~ "^## \\[" v "\\]" { on=1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          [ -s notes.md ] || rm notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          args=(--verify-tag --title "$GITHUB_REF_NAME")
+          if [ -f notes.md ]; then args+=(--notes-file notes.md); else args+=(--generate-notes); fi
+          # Tags like v1.2.3-rc.1 are published as pre-releases.
+          case "$GITHUB_REF_NAME" in *-*) args+=(--prerelease) ;; esac
+          gh release create "$GITHUB_REF_NAME" "${args[@]}" dist/*.tar.gz dist/checksums.txt
