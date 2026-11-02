@@ -23,6 +23,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     group_add:
       - "${DOCKER_GID:-999}"
+    # Hardening: the Docker socket already grants control of the host, so
+    # shrink the rest of the container's attack surface.
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
 
   # Publishes the local DNS entry: 192.168.1.20 nas.home.example.com

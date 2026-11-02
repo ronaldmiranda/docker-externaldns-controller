@@ -30,6 +30,12 @@ services:
     # socket so it can be read. Find it with: stat -c %g /var/run/docker.sock
     group_add:
       - "${DOCKER_GID:-999}"
+    # Hardening: the Docker socket already grants control of the host, so
+    # shrink the rest of the container's attack surface.
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
 
   # Example: publishes an A record whoami.example.com -> 203.0.113.10 using the
