@@ -48,8 +48,8 @@ jobs:
 
       - name: Release notes
         run: |
-          # Use the matching CHANGELOG.md section when there is one,
-          # otherwise fall back to GitHub's generated notes.
+          # Notes = Docker image section + the matching CHANGELOG.md section
+          # (when there is one).
           v="${GITHUB_REF_NAME#v}"
           awk -v v="$v" '
             $0 ~ "^## \\[" v "\\]" { on=1; next }
@@ -58,12 +58,27 @@ jobs:
           ' CHANGELOG.md > notes.md
           [ -s notes.md ] || rm notes.md
 
+          # Always tell which Docker image goes with this release
+          # (published by container_build.yml for the same tag).
+          image="ronaldmiranda/docker-externaldns-controller:${v}"
+          {
+            echo "## Docker image"
+            echo
+            echo '```'
+            echo "docker pull ${image}"
+            echo '```'
+            echo
+            echo "Image: [\`${image}\`](https://hub.docker.com/r/ronaldmiranda/docker-externaldns-controller/tags?name=${v})"
+            echo
+            if [ -f notes.md ]; then cat notes.md; fi
+          } > notes.full.md
+          mv notes.full.md notes.md
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          args=(--verify-tag --title "$GITHUB_REF_NAME")
-          if [ -f notes.md ]; then args+=(--notes-file notes.md); else args+=(--generate-notes); fi
+          args=(--verify-tag --title "$GITHUB_REF_NAME" --notes-file notes.md)
           # Tags like v1.2.3-rc.1 are published as pre-releases.
           case "$GITHUB_REF_NAME" in *-*) args+=(--prerelease) ;; esac
           gh release create "$GITHUB_REF_NAME" "${args[@]}" dist/*.tar.gz dist/checksums.txt

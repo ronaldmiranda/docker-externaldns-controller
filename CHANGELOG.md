@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- GitHub Release notes now state the Docker image to use
+  (`ronaldmiranda/docker-externaldns-controller:X.Y.Z`).
+
 ## [0.1.0] - 2026-11-02
 
 ### Added
