@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-02
+
 ### Added
 - Trivy filesystem and image scans in CI, reported to the GitHub Security tab.
 - Release process: version embedded in the binary and logged on startup,
